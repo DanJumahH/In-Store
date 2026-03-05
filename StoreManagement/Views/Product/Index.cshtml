@@ -1,0 +1,193 @@
+@model IEnumerable<StoreManagement.Models.ViewModels.ProductListViewModel>
+
+@{
+    ViewData["Title"] = "Products";
+
+    // Use Context.Request.Query instead of Request (Request may not be in scope in some Razor setups)
+    var qs = Context.Request.Query;
+    var currentSearch = qs["search"].ToString();
+    var currentCategory = qs["categoryId"].ToString();
+    var currentSupplier = qs["supplierId"].ToString();
+    var currentSort = qs["sort"].ToString();
+
+    var categories = ViewBag.Categories as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+    var suppliers = ViewBag.Suppliers as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+
+    string currentReturnUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Products</h2>
+        @if (User.IsInRole("Admin") || User.IsInRole("InventoryManager"))
+        {
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add New Product
+            </a>
+        }
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-2">
+                <div class="col-md-4">
+                    <input name="search" value="@currentSearch" class="form-control" placeholder="Search product, category or supplier..." />
+                </div>
+                <div class="col-md-3">
+                    <select name="categoryId" class="form-select">
+                        <option value="">All categories</option>
+                        @foreach (var c in categories)
+                        {
+                            <option value="@c.Value" selected="@(c.Value == currentCategory)">@c.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="supplierId" class="form-select">
+                        <option value="">All suppliers</option>
+                        @foreach (var s in suppliers)
+                        {
+                            <option value="@s.Value" selected="@(s.Value == currentSupplier)">@s.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex">
+                    <button type="submit" class="btn btn-primary me-2">Search</button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>
+                                <a asp-action="Index" asp-route-sort="@(currentSort == "name_asc" ? "name_desc" : "name_asc")"
+                                   asp-route-search="@currentSearch" asp-route-categoryId="@currentCategory" asp-route-supplierId="@currentSupplier">
+                                    @Html.DisplayNameFor(model => model.ProductName)
+                                </a>
+                            </th>
+                            <th>@Html.DisplayNameFor(model => model.CategoryName)</th>
+                            <th>@Html.DisplayNameFor(model => model.SupplierName)</th>
+                            <th>
+                                <a asp-action="Index" asp-route-sort="@(currentSort == "stock_asc" ? "stock_desc" : "stock_asc")"
+                                   asp-route-search="@currentSearch" asp-route-categoryId="@currentCategory" asp-route-supplierId="@currentSupplier">
+                                    @Html.DisplayNameFor(model => model.UnitStock)
+                                </a>
+                            </th>
+                            <th>
+                                <a asp-action="Index" asp-route-sort="@(currentSort == "price_asc" ? "price_desc" : "price_asc")"
+                                   asp-route-search="@currentSearch" asp-route-categoryId="@currentCategory" asp-route-supplierId="@currentSupplier">
+                                    Unit Price
+                                </a>
+                            </th>
+                            <th>Stock</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>@Html.DisplayFor(modelItem => item.ProductName)</td>
+                                    <td>@Html.DisplayFor(modelItem => item.CategoryName)</td>
+                                    <td>@Html.DisplayFor(modelItem => item.SupplierName)</td>
+                                    <td>@Html.DisplayFor(modelItem => item.UnitStock)</td>
+                                    <td>@String.Format("{0:C}", item.Price)</td>
+                                    <td>
+                                        @{
+                                            var stock = item.Stock;
+                                            var reorder = item.ReorderLevel;
+                                            string bgColor;
+                                            string textColor;
+                                            string label;
+                                            if (stock <= 0)
+                                            {
+                                                bgColor = "#dc3545"; // red
+                                                textColor = "white";
+                                                label = "Out of stock";
+                                            }
+                                            else if (reorder > 0 && stock <= reorder)
+                                            {
+                                                bgColor = "#ffc107"; // warning
+                                                textColor = "black";
+                                                label = $"Low stock ({stock})";
+                                            }
+                                            else
+                                            {
+                                                bgColor = "#198754"; // green
+                                                textColor = "white";
+                                                label = $"In stock ({stock})";
+                                            }
+                                        }
+                                        <span class="d-inline-block text-center"
+                                              style="background-color:@bgColor;color:@textColor;padding:0.25rem 0.5rem;border-radius:0.25rem;min-width:6.5rem;">
+                                            @label
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@item.ProductId"
+                                               asp-route-returnUrl="@currentReturnUrl"
+                                               class="btn btn-sm btn-info" title="Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            @if (User.IsInRole("Admin") || User.IsInRole("InventoryManager"))
+                                            {
+                                                <a asp-action="Edit" asp-route-id="@item.ProductId"
+                                                   asp-route-returnUrl="@currentReturnUrl"
+                                                   class="btn btn-sm btn-warning" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            }
+                                            @if (User.IsInRole("Admin") || User.IsInRole("InventoryManager"))
+                                            {
+                                                <a asp-action="Delete" asp-route-id="@item.ProductId"
+                                                   asp-route-returnUrl="@currentReturnUrl"
+                                                   class="btn btn-sm btn-danger" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center">No products found.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+}

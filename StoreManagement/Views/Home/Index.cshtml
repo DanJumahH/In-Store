@@ -1,0 +1,29 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+<h2>Welcome</h2>
+
+@if (User.Identity?.IsAuthenticated ?? false)
+{
+    <p>Hello @User.Identity.Name</p>
+
+    @if (User.IsInRole("Admin"))
+    {
+        <div class="alert alert-info">Admin-only content</div>
+    }
+
+    @if (User.IsInRole("InventoryManager"))
+    {
+        <div class="alert alert-info">Inventory Manager content</div>
+    }
+
+    @if (User.IsInRole("SalesStaff"))
+    {
+        <div class="alert alert-info">SalesStaff content</div>
+    }
+}
+else
+{
+    <p>Please <a href="~/Account/Login">log in</a> to see role-specific content.</p>
+}

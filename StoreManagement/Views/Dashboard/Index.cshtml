@@ -1,0 +1,650 @@
+﻿@model StoreManagement.Models.ViewModels.DashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard";
+
+    // Safety check
+    // if (Model == null)
+    // {
+    //     Model = new StoreManagement.Models.ViewModels.DashboardViewModel
+    //     {
+    //         UserRole = "Guest",
+    //         UserName = "User"
+    //     };
+    // }
+
+    var isAdmin = Model.UserRole == "Admin";
+    var isInventoryManager = Model.UserRole == "InventoryManager";
+    var isSalesStaff = Model.UserRole == "SalesStaff";
+}
+
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
+            <p class="text-muted">
+                Welcome back, <strong>@Model.UserName</strong>!
+                <span class="badge bg-secondary">@Model.UserRole</span>
+            </p>
+        </div>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- ========================================
+         ADMIN DASHBOARD - See Everything
+         ======================================== -->
+    @if (isAdmin)
+    {
+        <!-- Admin Stats Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 text-white-50">Today's Orders</h6>
+                                <h2 class="card-title mb-0">@Model.TodayOrdersCount</h2>
+                            </div>
+                            <div><i class="bi bi-cart-check" style="font-size: 2.5rem; opacity: 0.3;"></i></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-primary bg-opacity-75 border-0">
+                        <small>Week: @Model.WeekOrdersCount | Month: @Model.MonthOrdersCount</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 text-white-50">Today's Revenue</h6>
+                                <h2 class="card-title mb-0">$@Model.TodayRevenue.ToString("N0")</h2>
+                            </div>
+                            <div><i class="bi bi-currency-dollar" style="font-size: 2.5rem; opacity: 0.3;"></i></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-success bg-opacity-75 border-0">
+                        <small>Total: $@Model.TotalRevenue.ToString("N0")</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 text-white-50">Total Products</h6>
+                                <h2 class="card-title mb-0">@Model.TotalProducts</h2>
+                            </div>
+                            <div><i class="bi bi-box-seam" style="font-size: 2.5rem; opacity: 0.3;"></i></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-info bg-opacity-75 border-0">
+                        <small>Low Stock: @Model.LowStockProducts items</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 text-dark">Total Staff</h6>
+                                <h2 class="card-title mb-0 text-dark">@Model.TotalStaff</h2>
+                            </div>
+                            <div><i class="bi bi-people" style="font-size: 2.5rem; opacity: 0.3;"></i></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-warning bg-opacity-75 border-0">
+                        <small class="text-dark">Customers: @Model.TotalCustomers</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <!-- Order Status -->
+            <div class="col-md-3">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-pie-chart"></i> Order Status</h6>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var status in Model.OrdersByStatus.OrderBy(s => s.Key))
+                        {
+                            var percentage = Model.TotalOrders > 0 ? (status.Value * 100.0 / Model.TotalOrders) : 0;
+                            var badgeClass = status.Key switch
+                            {
+                                StoreManagement.Models.Enums.OrderStatus.Pending => "bg-warning text-dark",
+                                @* StoreManagement.Models.Enums.OrderStatus.Processing => "bg-info",
+                                StoreManagement.Models.Enums.OrderStatus.Shipped => "bg-primary", *@
+                                StoreManagement.Models.Enums.OrderStatus.Delivered => "bg-success",
+                                @* StoreManagement.Models.Enums.OrderStatus.Cancelled => "bg-danger", *@
+                                _ => "bg-secondary"
+                            };
+
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="badge @badgeClass">@status.Key</span>
+                                    <strong>@status.Value</strong>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar @badgeClass.Replace("text-dark", "")" style="width: @percentage.ToString("F1")%"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Staff -->
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-award"></i> Top Staff Performance</h6>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.TopStaff?.Any() == true)
+                        {
+                            @foreach (var staff in Model.TopStaff)
+                            {
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <strong>@staff.StaffName</strong>
+                                        <br /><small class="text-muted">@staff.OrdersProcessed orders</small>
+                                    </div>
+                                    <span class="badge bg-success">$@staff.RevenueGenerated.ToString("N0")</span>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted text-center my-3">No data available</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="col-md-5">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <a href="/Order/Create" class="btn btn-primary w-100"><i class="bi bi-plus-circle"></i> New Order</a>
+                            </div>
+                            <div class="col-6">
+                                <a href="/Product/Create" class="btn btn-success w-100"><i class="bi bi-box"></i> Add Product</a>
+                            </div>
+                            <div class="col-6">
+                                <a href="/Customer/Create" class="btn btn-info w-100"><i class="bi bi-person-plus"></i> Add Customer</a>
+                            </div>
+                            <div class="col-6">
+                                <a href="/Staff/Create" class="btn btn-warning w-100"><i class="bi bi-people"></i> Add Staff</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders & Top Products -->
+        <div class="row g-3">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-light d-flex justify-content-between">
+                        <h6 class="mb-0"><i class="bi bi-clock-history"></i> Recent Orders</h6>
+                        <a href="/Order/Index" class="btn btn-sm btn-outline-primary">View All</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Customer</th>
+                                        <th>Status</th>
+                                        <th>Total</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (Model.RecentOrders?.Any() == true)
+                                    {
+                                        @foreach (var order in Model.RecentOrders.Take(5))
+                                        {
+                                            <tr>
+                                                <td><strong>#@order.OrderId</strong></td>
+                                                <td>@order.CustomerName</td>
+                                                <td><span class="badge @order.GetStatusBadgeClass()">@order.Status</span></td>
+                                                <td><strong>$@order.TotalAmount.ToString("N2")</strong></td>
+                                                <td><a href="/Order/Details/@order.OrderId" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-trophy"></i> Top Products</h6>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.TopProducts?.Any() == true)
+                        {
+                            @foreach (var product in Model.TopProducts.Take(5))
+                            {
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>@product.ProductName</strong>
+                                        <span class="badge bg-primary">@product.TotalQuantity sold</span>
+                                    </div>
+                                    <small class="text-success">$@product.TotalRevenue.ToString("N2")</small>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ========================================
+         INVENTORY MANAGER DASHBOARD
+         ======================================== -->
+    @if (isInventoryManager)
+    {
+        <!-- Inventory Stats Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 text-white-50">Total Products</h6>
+                                <h2 class="card-title mb-0">@Model.TotalProducts</h2>
+                            </div>
+                            <div><i class="bi bi-box-seam" style="font-size: 2.5rem; opacity: 0.3;"></i></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-primary bg-opacity-75 border-0">
+                        <small>Categories: @Model.TotalCategories</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-danger h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 text-white-50">Low Stock Items</h6>
+                                <h2 class="card-title mb-0">@Model.LowStockProducts</h2>
+                            </div>
+                            <div><i class="bi bi-exclamation-triangle" style="font-size: 2.5rem; opacity: 0.3;"></i></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-danger bg-opacity-75 border-0">
+                        <small>Requires attention</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 text-white-50">Total Suppliers</h6>
+                                <h2 class="card-title mb-0">@Model.TotalSuppliers</h2>
+                            </div>
+                            <div><i class="bi bi-truck" style="font-size: 2.5rem; opacity: 0.3;"></i></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-success bg-opacity-75 border-0">
+                        <small>Active suppliers</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 text-white-50">Total Shippers</h6>
+                                <h2 class="card-title mb-0">@Model.TotalShippers</h2>
+                            </div>
+                            <div><i class="bi bi-airplane" style="font-size: 2.5rem; opacity: 0.3;"></i></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-info bg-opacity-75 border-0">
+                        <small>Shipping partners</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <!-- Category Stats -->
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-grid"></i> Categories</h6>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.CategoryStats?.Any() == true)
+                        {
+                            @foreach (var category in Model.CategoryStats)
+                            {
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>@category.CategoryName</strong>
+                                        <span class="badge bg-primary">@category.ProductCount items</span>
+                                    </div>
+                                    <small class="text-success">Value: $@category.TotalValue.ToString("N0")</small>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="/Product/Create" class="btn btn-primary btn-lg"><i class="bi bi-plus-circle"></i> Add Product</a>
+                            <a href="/Category/Create" class="btn btn-success btn-lg"><i class="bi bi-grid-3x3"></i> Add Category</a>
+                            <a href="/Supplier/Create" class="btn btn-info btn-lg"><i class="bi bi-truck"></i> Add Supplier</a>
+                            <a href="/Shipper/Create" class="btn btn-warning btn-lg"><i class="bi bi-airplane"></i> Add Shipper</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Products -->
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-trophy"></i> Best Sellers</h6>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.TopProducts?.Any() == true)
+                        {
+                            @foreach (var product in Model.TopProducts)
+                            {
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>@product.ProductName</strong>
+                                        <span class="badge bg-success">@product.TotalQuantity sold</span>
+                                    </div>
+                                    <small class="text-muted">In Stock: @product.UnitsInStock</small>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Products -->
+        <div class="card">
+            <div class="card-header bg-light d-flex justify-content-between">
+                <h6 class="mb-0"><i class="bi bi-clock-history"></i> Recently Added Products</h6>
+                <a href="/Product/Index" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product Name</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.RecentProducts?.Any() == true)
+                            {
+                                @foreach (var product in Model.RecentProducts.Take(10))
+                                {
+                                    <tr>
+                                        <td><strong>@product.ProductName</strong></td>
+                                        <td>@product.CategoryName</td>
+                                        <td>$@product.Price.ToString("N2")</td>
+                                        <td>
+                                            @if (product.UnitsInStock < 10)
+                                            {
+                                                <span class="badge bg-danger">@product.UnitsInStock</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">@product.UnitsInStock</span>
+                                            }
+                                        </td>
+                                        <td><a href="/Product/Details/@product.ProductId" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ========================================
+         SALES STAFF DASHBOARD
+         ======================================== -->
+    @if (isSalesStaff)
+    {
+        <!-- Sales Stats Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 text-white-50">Today's Orders</h6>
+                                <h2 class="card-title mb-0">@Model.TodayOrdersCount</h2>
+                            </div>
+                            <div><i class="bi bi-cart-check" style="font-size: 2.5rem; opacity: 0.3;"></i></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-primary bg-opacity-75 border-0">
+                        <small>This Week: @Model.WeekOrdersCount</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 text-white-50">Today's Revenue</h6>
+                                <h2 class="card-title mb-0">$@Model.TodayRevenue.ToString("N0")</h2>
+                            </div>
+                            <div><i class="bi bi-currency-dollar" style="font-size: 2.5rem; opacity: 0.3;"></i></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-success bg-opacity-75 border-0">
+                        <small>This Week: $@Model.WeekRevenue.ToString("N0")</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 text-white-50">Total Orders</h6>
+                                <h2 class="card-title mb-0">@Model.TotalOrders</h2>
+                            </div>
+                            <div><i class="bi bi-box-seam" style="font-size: 2.5rem; opacity: 0.3;"></i></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-info bg-opacity-75 border-0">
+                        <small>This Month: @Model.MonthOrdersCount</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-subtitle mb-2 text-dark">Total Customers</h6>
+                                <h2 class="card-title mb-0 text-dark">@Model.TotalCustomers</h2>
+                            </div>
+                            <div><i class="bi bi-people" style="font-size: 2.5rem; opacity: 0.3;"></i></div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-warning bg-opacity-75 border-0">
+                        <small class="text-dark">Active customers</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <!-- Order Status -->
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-pie-chart"></i> Order Status</h6>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var status in Model.OrdersByStatus.OrderBy(s => s.Key))
+                        {
+                            var percentage = Model.TotalOrders > 0 ? (status.Value * 100.0 / Model.TotalOrders) : 0;
+                            var badgeClass = status.Key switch
+                            {
+                                StoreManagement.Models.Enums.OrderStatus.Pending => "bg-warning text-dark",
+                                @* StoreManagement.Models.Enums.OrderStatus.Processing => "bg-info",
+                                StoreManagement.Models.Enums.OrderStatus.Shipped => "bg-primary", *@
+                                StoreManagement.Models.Enums.OrderStatus.Delivered => "bg-success",
+                                @* StoreManagement.Models.Enums.OrderStatus.Cancelled => "bg-danger", *@
+                                _ => "bg-secondary"
+                            };
+
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="badge @badgeClass">@status.Key</span>
+                                    <strong>@status.Value</strong>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar @badgeClass.Replace("text-dark", "")" style="width: @percentage.ToString("F1")%"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Customers -->
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-star"></i> Top Customers</h6>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.TopCustomers?.Any() == true)
+                        {
+                            @foreach (var customer in Model.TopCustomers)
+                            {
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <strong>@customer.CustomerName</strong>
+                                        <br /><small class="text-muted">@customer.OrderCount orders</small>
+                                    </div>
+                                    <span class="badge bg-success">$@customer.TotalSpent.ToString("N0")</span>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="/Order/Create" class="btn btn-primary btn-lg"><i class="bi bi-plus-circle"></i> Create Order</a>
+                            <a href="/Customer/Create" class="btn btn-success btn-lg"><i class="bi bi-person-plus"></i> Add Customer</a>
+                            <a href="/Order/Index" class="btn btn-info btn-lg"><i class="bi bi-list-ul"></i> View All Orders</a>
+                            <a href="/Customer/Index" class="btn btn-warning btn-lg"><i class="bi bi-people"></i> Manage Customers</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="card">
+            <div class="card-header bg-light d-flex justify-content-between">
+                <h6 class="mb-0"><i class="bi bi-clock-history"></i> Recent Orders</h6>
+                <a href="/Order/Index" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.RecentOrders?.Any() == true)
+                            {
+                                @foreach (var order in Model.RecentOrders.Take(10))
+                                {
+                                    <tr>
+                                        <td><strong>#@order.OrderId</strong></td>
+                                        <td>@order.OrderDate?.ToString("MMM dd")</td>
+                                        <td>@order.CustomerName</td>
+                                        <td><span class="badge @order.GetStatusBadgeClass()">@order.Status</span></td>
+                                        <td><strong>$@order.TotalAmount.ToString("N2")</strong></td>
+                                        <td><a href="/Order/Details/@order.OrderId" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+}

@@ -1,0 +1,97 @@
+﻿@model StoreManagement.Models.ViewModels.OrderViewModel
+
+@{
+    ViewData["Title"] = "Delete Order";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Delete Order</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <strong>Warning!</strong> Are you sure you want to delete this order? This will also delete all order items.
+                    </div>
+
+                    <h5>Order Information:</h5>
+
+                    <dl class="row">
+                        <dt class="col-sm-3">Order ID:</dt>
+                        <dd class="col-sm-9">
+                            <strong>#@Model.OrderId</strong>
+                        </dd>
+
+                        <dt class="col-sm-3">Order Date:</dt>
+                        <dd class="col-sm-9">@Model.OrderDate.ToString("yyyy-MM-dd")</dd>
+
+                        <dt class="col-sm-3">Customer:</dt>
+                        <dd class="col-sm-9">@Model.CustomerName</dd>
+
+                        <dt class="col-sm-3">Staff:</dt>
+                        <dd class="col-sm-9">@Model.StaffName</dd>
+
+                        <dt class="col-sm-3">Shipper:</dt>
+                        <dd class="col-sm-9">@Model.ShipperName</dd>
+
+                        <dt class="col-sm-3">Total Items:</dt>
+                        <dd class="col-sm-9">
+                            <span class="badge bg-info">@Model.TotalItems items</span>
+                        </dd>
+
+                        <dt class="col-sm-3">Total Amount:</dt>
+                        <dd class="col-sm-9">
+                            <strong class="text-success">@String.Format("{0:C}", Model.TotalAmount)</strong>
+                        </dd>
+                    </dl>
+
+                    <hr />
+
+                    <h6>Order Items:</h6>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th width="20%">Quantity</th>
+                                    <th width="20%">Line Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var detail in Model.OrderDetails)
+                                {
+                                    <tr>
+                                        <td>@detail.ProductName</td>
+                                        <td>@detail.Quantity</td>
+                                        <td>@String.Format("{0:C}", detail.LineTotal)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <hr />
+
+                    <form asp-action="Delete" method="post">
+                        <input type="hidden" asp-for="OrderId" />
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Yes, Delete Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+}

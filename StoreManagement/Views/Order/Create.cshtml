@@ -1,0 +1,527 @@
+﻿@model StoreManagement.Models.ViewModels.CreateOrderViewModel
+
+@{
+    ViewData["Title"] = "Create Order";
+    var isStaffAutoAssigned = Model.EmployeeId;
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Create New Order</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Create" method="post" id="orderForm">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="CustomerId" class="form-label"></label>
+                                <div class="input-group">
+                                    <select asp-for="CustomerId" class="form-select" id="customerSelect" asp-items="Model.Customers">
+                                        <option value="">-- Select Customer --</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#quickCustomerModal" title="Quick Add Customer">
+                                        <i class="bi bi-plus-circle"></i> New
+                                    </button>
+                                </div>
+                                <span asp-validation-for="CustomerId" class="text-danger"></span>
+                                <small class="form-text text-muted">
+                                    Click "+ New" to quickly add a customer
+                                </small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="OrderDate" class="form-label"></label>
+                                <input asp-for="OrderDate" class="form-control" type="date" />
+                                <span asp-validation-for="OrderDate" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="EmployeeId" class="form-label"></label>
+                                @if (Convert.ToBoolean(isStaffAutoAssigned))
+                                {
+                                    <input type="hidden" asp-for="EmployeeId" />
+                                    <select class="form-select" disabled asp-items="Model.Staff">
+                                        <option value="">-- Select Staff Member --</option>
+                                    </select>
+                                    <small class="form-text text-success">
+                                        <i class="bi bi-check-circle"></i> Auto-assigned to you
+                                    </small>
+                                }
+                                else
+                                {
+                                    <select asp-for="EmployeeId" class="form-select" asp-items="Model.Staff">
+                                        <option value="">-- Select Staff Member --</option>
+                                    </select>
+                                    <small class="form-text text-muted">You're not linked to a staff member</small>
+                                }
+                                <span asp-validation-for="EmployeeId" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ShipperId" class="form-label"></label>
+                                <select asp-for="ShipperId" class="form-select" asp-items="Model.Shippers">
+                                    <option value="">-- Select Shipper --</option>
+                                </select>
+                                <span asp-validation-for="ShipperId" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <h5 class="mb-3">Order Items</h5>
+
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <label for="categorySelect" class="form-label">Category</label>
+                                <select id="categorySelect" class="form-select">
+                                    <option value="">-- Select Category --</option>
+                                    @foreach (var cat in Model.Categories ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>())
+                                    {
+                                        <option value="@cat.Value">@cat.Text</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-md-5">
+                                <label for="productSelect" class="form-label">Product</label>
+                                <select id="productSelect" class="form-select">
+                                    <option value="">-- Select Product (choose category first) --</option>
+                                    <!-- Products will be loaded via AJAX when a category is selected -->
+                                </select>
+                            </div>
+
+                            <div class="col-md-2">
+                                <label for="quantityInput" class="form-label">Quantity</label>
+                                <input type="number" id="quantityInput" class="form-control" value="1" min="1" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="button" class="btn btn-success w-100" onclick="addItem()">
+                                    <i class="bi bi-plus"></i> Add
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive mb-3">
+                            <table class="table table-bordered" id="itemsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="50%">Product</th>
+                                        <th width="15%">Unit Price</th>
+                                        <th width="15%">Quantity</th>
+                                        <th width="15%">Total</th>
+                                        <th width="5%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="itemsTableBody">
+                                    <tr id="emptyRow">
+                                        <td colspan="5" class="text-center text-muted">No items added yet</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-info">
+                                        <td colspan="3" class="text-end"><strong>Grand Total:</strong></td>
+                                        <td colspan="2"><strong id="grandTotal">$0.00</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <input type="hidden" name="itemsJson" id="itemsJson" />
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to List
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Create Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quick Add Customer Modal -->
+            <div class="modal fade" id="quickCustomerModal" tabindex="-1" aria-labelledby="quickCustomerModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title" id="quickCustomerModalLabel">
+                                <i class="bi bi-person-plus"></i> Quick Add Customer
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="quickCustomerName" class="form-label">Customer Name *</label>
+                                <input type="text" class="form-control" id="quickCustomerName" placeholder="Enter customer/company name" required />
+                            </div>
+                            <div class="mb-3">
+                                <label for="quickContactName" class="form-label">Contact Person</label>
+                                <input type="text" class="form-control" id="quickContactName" placeholder="Contact person name" />
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="quickCity" class="form-label">City</label>
+                                    <input type="text" class="form-control" id="quickCity" placeholder="City" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="quickCountry" class="form-label">Country</label>
+                                    <input type="text" class="form-control" id="quickCountry" placeholder="Country" />
+                                </div>
+                            </div>
+                            <div id="quickCustomerError" class="alert alert-danger d-none"></div>
+                            <div id="quickCustomerSuccess" class="alert alert-success d-none"></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-success" onclick="saveQuickCustomer()">
+                                <i class="bi bi-check-circle"></i> Save Customer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <script>
+        let items = [];
+
+        // Load products for selected category
+        document.getElementById('categorySelect').addEventListener('change', function () {
+            const categoryId = this.value;
+            const productSelect = document.getElementById('productSelect');
+
+            // Clear existing products
+            productSelect.innerHTML = '<option value="">-- Select Product --</option>';
+
+            if (!categoryId) {
+                // No category selected
+                return;
+            }
+
+            fetch(`/Order/GetProductsByCategory?categoryId=${categoryId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!Array.isArray(data)) return;
+
+                    data.forEach(p => {
+                        // p.text contains "ProductName - $X.YY"
+                        // Extract price from text
+                        const match = (p.text || '').match(/\$([\d,]+\.?\d*)/);
+                        const price = match ? match[1] : '0.00';
+
+                        const opt = document.createElement('option');
+                        opt.value = p.value;
+                        opt.setAttribute('data-price', price);
+                        opt.textContent = p.text;
+                        productSelect.appendChild(opt);
+                    });
+                })
+                .catch(err => {
+                    console.error('Error loading products:', err);
+                });
+        });
+
+        // Quick Customer Creation
+        async function saveQuickCustomer() {
+            const customerName = document.getElementById('quickCustomerName').value.trim();
+            const contactName = document.getElementById('quickContactName').value.trim();
+            const city = document.getElementById('quickCity').value.trim();
+            const country = document.getElementById('quickCountry').value.trim();
+
+            if (!customerName) {
+                showQuickCustomerError('Customer name is required');
+                return;
+            }
+
+            const customerData = {
+                customerName: customerName,
+                contactName: contactName,
+                city: city,
+                country: country
+            };
+
+            try {
+                const response = await fetch('/Customer/QuickCreate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                    },
+                    body: JSON.stringify(customerData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Add new customer to dropdown
+                    const customerSelect = document.getElementById('customerSelect');
+                    const option = new Option(result.customerName, result.customerId, true, true);
+                    customerSelect.add(option);
+                    customerSelect.value = result.customerId;
+
+                    // Show success message
+                    showQuickCustomerSuccess(`Customer "${result.customerName}" added successfully!`);
+
+                    // Close modal after 1 second
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(document.getElementById('quickCustomerModal')).hide();
+                        clearQuickCustomerForm();
+                    }, 1000);
+                } else {
+                    showQuickCustomerError(result.message || 'Failed to create customer');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showQuickCustomerError('An error occurred while creating the customer');
+            }
+        }
+
+        function showQuickCustomerError(message) {
+            const errorDiv = document.getElementById('quickCustomerError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('d-none');
+            document.getElementById('quickCustomerSuccess').classList.add('d-none');
+        }
+
+        function showQuickCustomerSuccess(message) {
+            const successDiv = document.getElementById('quickCustomerSuccess');
+            successDiv.textContent = message;
+            successDiv.classList.remove('d-none');
+            document.getElementById('quickCustomerError').classList.add('d-none');
+        }
+
+        function clearQuickCustomerForm() {
+            document.getElementById('quickCustomerName').value = '';
+            document.getElementById('quickContactName').value = '';
+            document.getElementById('quickCity').value = '';
+            document.getElementById('quickCountry').value = '';
+            document.getElementById('quickCustomerError').classList.add('d-none');
+            document.getElementById('quickCustomerSuccess').classList.add('d-none');
+        }
+
+        // Order Items Management
+        function addItem() {
+            const productSelect = document.getElementById('productSelect');
+            const quantityInput = document.getElementById('quantityInput');
+
+            const productId = parseInt(productSelect.value);
+            const quantity = parseInt(quantityInput.value);
+
+            if (!productId || quantity < 1) {
+                alert('Please select a product and enter a valid quantity');
+                return;
+            }
+
+            // Get selected option
+            const selectedOption = productSelect.options[productSelect.selectedIndex];
+            const productName = selectedOption.text.split(' - ')[0];
+
+            // Get price from data attribute (more reliable)
+            const priceText = selectedOption.getAttribute('data-price');
+            const price = parseFloat(priceText) || 0;
+
+            // Check if product already exists
+            const existingItem = items.find(i => i.productId === productId);
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                items.push({
+                    productId: productId,
+                    quantity: quantity,
+                    productName: productName,
+                    unitPrice: price
+                });
+            }
+
+            renderItems();
+
+            // Reset inputs
+            productSelect.value = '';
+            quantityInput.value = 1;
+        }
+
+        function removeItem(index) {
+            items.splice(index, 1);
+            renderItems();
+        }
+
+        function renderItems() {
+            const tbody = document.getElementById('itemsTableBody');
+            const emptyRow = document.getElementById('emptyRow');
+
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr id="emptyRow"><td colspan="5" class="text-center text-muted">No items added yet</td></tr>';
+                document.getElementById('grandTotal').textContent = '$0.00';
+                return;
+            }
+
+            if (emptyRow) emptyRow.remove();
+
+            let total = 0;
+            tbody.innerHTML = items.map((item, index) => {
+                const lineTotal = item.unitPrice * item.quantity;
+                total += lineTotal;
+
+                return `
+                    <tr>
+                        <td>${item.productName}</td>
+                        <td>$${item.unitPrice.toFixed(2)}</td>
+                        <td>${item.quantity}</td>
+                        <td>$${lineTotal.toFixed(2)}</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="removeItem(${index})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('grandTotal').textContent = '$' + total.toFixed(2);
+        }
+
+        // Before form submit, set items JSON
+        document.getElementById('orderForm').addEventListener('submit', function(e) {
+            if (items.length === 0) {
+                e.preventDefault();
+                alert('Please add at least one item to the order');
+                return false;
+            }
+
+            const jsonData = JSON.stringify(items);
+            console.log('Items being sent:', items);
+            console.log('JSON string:', jsonData);
+
+            document.getElementById('itemsJson').value = jsonData;
+            console.log('Hidden field value:', document.getElementById('itemsJson').value);
+        });
+    </script>
+}
+
+
+@*
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <script>
+        let items = [];
+        const products = @Html.Raw(Json.Serialize(
+              (Model.Products ?? new List<SelectListItem>())
+                    .Select(p => new { value = p.Value, text = p.Text })
+                    .ToList()
+        ));
+
+
+        function addItem() {
+            const productSelect = document.getElementById('productSelect');
+            const quantityInput = document.getElementById('quantityInput');
+
+            const productId = parseInt(productSelect.value);
+            const quantity = parseInt(quantityInput.value);
+
+            if (!productId || quantity < 1) {
+                alert('Please select a product and enter a valid quantity');
+                return;
+            }
+
+            // Get product details
+            const productOption = products.find(p => parseInt(p.value) === productId);
+            if (!productOption) return;
+
+            // Extract price from text (format: "ProductName - $XX.XX")
+            const priceMatch = productOption.text.match(/\$([\d,]+\.?\d*)/);
+            const price = priceMatch ? parseFloat(priceMatch[1].replace(',', '')) : 0;
+
+            // Check if product already exists
+            const existingItem = items.find(i => i.productId === productId);
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                items.push({
+                    productId: productId,
+                    quantity: quantity,
+                    productName: productOption.text.split(' - ')[0],
+                    unitPrice: price
+                });
+            }
+
+            renderItems();
+
+            // Reset inputs
+            productSelect.value = '';
+            quantityInput.value = 1;
+        }
+
+        function removeItem(index) {
+            items.splice(index, 1);
+            renderItems();
+        }
+
+        function renderItems() {
+            const tbody = document.getElementById('itemsTableBody');
+            const emptyRow = document.getElementById('emptyRow');
+
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr id="emptyRow"><td colspan="5" class="text-center text-muted">No items added yet</td></tr>';
+                document.getElementById('grandTotal').textContent = '$0.00';
+                return;
+            }
+
+            if (emptyRow) emptyRow.remove();
+
+            let total = 0;
+            tbody.innerHTML = items.map((item, index) => {
+                const lineTotal = item.unitPrice * item.quantity;
+                total += lineTotal;
+
+                return `
+                    <tr>
+                        <td>${item.productName}</td>
+                        <td>$${item.unitPrice.toFixed(2)}</td>
+                        <td>${item.quantity}</td>
+                        <td>$${lineTotal.toFixed(2)}</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="removeItem(${index})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('grandTotal').textContent = '$' + total.toFixed(2);
+        }
+
+        // Before form submit, set items JSON
+        document.getElementById('orderForm').addEventListener('submit', function(e) {
+            if (items.length === 0) {
+                e.preventDefault();
+                alert('Please add at least one item to the order');
+                return false;
+            }
+
+            document.getElementById('itemsJson').value = JSON.stringify(items);
+        });
+    </script>
+}
+
+*@

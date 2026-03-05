@@ -1,0 +1,62 @@
+@using Microsoft.AspNetCore.Identity
+@using StoreManagement.Models
+@inject SignInManager<AppUser> SignInManager
+@inject UserManager<AppUser> UserManager
+
+<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+    @if (SignInManager.IsSignedIn(User))
+    {
+        var currentUser = await UserManager.GetUserAsync(User);
+
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Dashboard" asp-action="Index">Home</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Product" asp-action="Index">Products</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Category" asp-action="Index">Product Categories</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Supplier" asp-action="Index">Suppliers</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Shipper" asp-action="Index">Shippers</a>
+        </li>
+
+        @* Only Admin or InventoryManager can see Create Product (matches your controller Authorize attribute) *@
+        @if (User.IsInRole("Admin") || User.IsInRole("InventoryManager"))
+        {
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Product" asp-action="Create">Create Product</a>
+            </li>
+        }
+
+        @if (User.IsInRole("Admin") || User.IsInRole("SalesStaff"))
+        {
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Order" asp-action="Index">View Orders</a>
+            </li>
+        }
+
+        
+        @if (User.IsInRole("Admin"))
+        {
+            
+
+            <li class="nav-item">
+                <a class="nav-link" asp-controller="Staff" asp-action="Index">Staffs</a>
+            </li>
+        }
+    }
+    else
+    {
+        <li class="nav-item">
+            <a class="nav-link" asp-controller="Account" asp-action="Login">Login</a>
+        </li>
+    }
+</ul>
