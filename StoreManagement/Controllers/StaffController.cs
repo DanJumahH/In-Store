@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StoreManagement.Models.ViewModels;
+using StoreManagement.Services.DTOs;
 using StoreManagement.Services.Interfaces;
 
 namespace StoreManagement.Controllers
@@ -9,11 +10,13 @@ namespace StoreManagement.Controllers
     public class StaffController : Controller
     {
         private readonly IStaffService _staffService;
+        private readonly IEmailService _emailService;
         private readonly ILogger<StaffController> _logger;
 
-        public StaffController(IStaffService staffService, ILogger<StaffController> logger)
+        public StaffController(IStaffService staffService, IEmailService emailService, ILogger<StaffController> logger)
         {
             _staffService = staffService;
+            _emailService = emailService;
             _logger = logger;
         }
 
@@ -267,6 +270,50 @@ namespace StoreManagement.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // POST: Staff/SendCredentialsEmail
+        [HttpPost]
+        public async Task<IActionResult> SendCredentialsEmail([FromBody] SendCredentialsEmailRequest emailRequest)
+        {
+            try
+            {
+                var staff = await _staffService.GetStaffByIdAsync(emailRequest.StaffId);
+                if (staff == null)
+                {
+                    return Json(new { success = false, message = "Staff member not found." });
+                }
+
+                if (string.IsNullOrEmpty(emailRequest.Email) || string.IsNullOrEmpty(emailRequest.Password))
+                {
+                    return Json(new { success = false, message = "Invalid credentials provided." });
+                }
+
+                var emailViewModel = new EmailViewModel
+                {
+                    Email = emailRequest.Email,
+                    Password = emailRequest.Password,
+                    Role = emailRequest.Role ?? string.Empty,
+                    FirstName = staff.FirstName,
+                    LastName = staff.LastName,
+                    StaffId = emailRequest.StaffId,
+                    AppUrl = $"{Request.Scheme}://{Request.Host}"
+                };
+
+                var emailSent = await _emailService.SendStaffCredentialsAsync(emailViewModel);
+                
+                if (!emailSent)
+                {
+                    return Json(new { success = false, message = "Failed to send email. Please check your email settings and try again." });
+                }
+
+                return Json(new { success = true, message = "Credentials sent successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending credentials email for Staff ID: {emailRequest.StaffId}", emailRequest.StaffId);
+                return Json(new { success = false, message = "An error occurred while sending the email." });
+            }
         }
     }
 }

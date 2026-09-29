@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using StoreManagement.Services;
 using StoreManagement.Services.Interfaces;
+using StoreManagement.Models.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +41,12 @@ builder.Services.AddScoped<IShipperService, ShipperService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
 //builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+
+// Email Service
+var emailSettings = new EmailSettings();
+builder.Configuration.GetSection("EmailSettings").Bind(emailSettings);
+builder.Services.AddSingleton(emailSettings);
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // SeedService
 builder.Services.AddHostedService<SeedService>();

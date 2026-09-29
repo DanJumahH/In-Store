@@ -52,7 +52,7 @@ namespace StoreManagement.Controllers
             //}
         }
 
-        // GET: Order/Details/5
+        // GET: Order/Detail s/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
