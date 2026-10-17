@@ -27,5 +27,18 @@ public partial class Order
 
     public DateTime? StatusUpdatedAt { get; set; }
 
+    // Payment
+    [MaxLength(100)]
+    public string? PaymentReference { get; set; }
+
+    public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Manual;
+
+    public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Unpaid;
+
+    public DateTime? PaymentDate { get; set; }
+
+    [MaxLength(500)]
+    public string? PaymentNotes { get; set; }
+
     public ICollection<OrderDetail> OrderDetails { get; set; } 
 }

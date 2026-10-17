@@ -51,6 +51,15 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 // SeedService
 builder.Services.AddHostedService<SeedService>();
 
+// Paystack Configuration
+var paystackSettings = new PaystackSettings();
+builder.Configuration.GetSection("Paystack").Bind(paystackSettings);
+builder.Services.Configure<PaystackSettings>(builder.Configuration.GetSection("Paystack"));
+builder.Services.AddScoped<IPaystackService, PaystackService>();
+
+// Typed HttpClient for Paystack
+builder.Services.AddHttpClient<IPaystackService, PaystackService>();
+
 var app = builder.Build();
 
 

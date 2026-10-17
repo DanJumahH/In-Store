@@ -24,9 +24,12 @@ namespace StoreManagement.Models.ViewModels
         public string? Unit { get; set; }
 
         [Range(0, double.MaxValue, ErrorMessage = "Price must be a positive value")]
-        [Display(Name = "Price")]
+        [Display(Name = "Price (NGN)")]
         [DisplayFormat(DataFormatString = "{0:C2}", ApplyFormatInEditMode = false)] // Currency format
         public decimal Price { get; set; }
+
+        [MaxLength(3)]
+        public string Currency { get; set; } = "NGN";
 
         // Stock management UI
         [Range(0, int.MaxValue, ErrorMessage = "Stock must be zero or greater")]

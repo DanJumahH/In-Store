@@ -75,7 +75,10 @@ namespace StoreManagement.Services
                     ItemCount = o.OrderDetails.Count(),
                     TotalAmount = o.OrderDetails.Sum(od => (od.Product.Price) * (od.Quantity)),
                     Status = o.Status,
-                    StatusUpdatedAt = o.StatusUpdatedAt
+                    StatusUpdatedAt = o.StatusUpdatedAt,
+                    PaymentStatus = o.PaymentStatus,
+                    PaymentMethod = o.PaymentMethod,
+                    PaymentDate = o.PaymentDate
                 })
                 .OrderByDescending(o => o.OrderDate)
                 .ThenByDescending(o => o.OrderId)
@@ -162,7 +165,12 @@ namespace StoreManagement.Services
                         Quantity = od.Quantity,
                         ProductName = od.Product != null ? od.Product.ProductName : "N/A",
                         UnitPrice = od.Product != null ? od.Product.Price : 0
-                    }).ToList()
+                    }).ToList(),
+                    PaymentMethod = o.PaymentMethod,
+                    PaymentStatus = o.PaymentStatus,
+                    PaymentReference = o.PaymentReference,
+                    PaymentDate = o.PaymentDate,
+                    PaymentNotes = o.PaymentNotes
                 })
                 .FirstOrDefaultAsync();
 

@@ -1,0 +1,28 @@
+@{
+    ViewData["Title"] = "Payment Successful";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="bi bi-check-circle"></i> Payment Successful!</h4>
+                </div>
+                <div class="card-body text-center">
+                    <p class="fs-5 mt-3">Your payment has been confirmed.</p>
+                    <p class="text-muted">Order #@ViewBag.OrderId</p>
+
+                    <div class="mt-4">
+                        <a asp-controller="Order" asp-action="Details" asp-route-id="@ViewBag.OrderId" class="btn btn-primary">
+                            <i class="bi bi-arrow-right"></i> View Order Details
+                        </a>
+                        <a asp-controller="Order" asp-action="Index" class="btn btn-secondary ms-2">
+                            <i class="bi bi-list"></i> Back to Orders
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
