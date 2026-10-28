@@ -23,6 +23,8 @@ namespace StoreManagement.Controllers
         private readonly IPaystackService _paystackService;
         private readonly ApplicationDbContext _context;
         private readonly PaystackSettings _payOptions;
+        private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
 
         public OrderController(
             IOrderService orderService,
@@ -30,7 +32,9 @@ namespace StoreManagement.Controllers
             UserManager<AppUser> userManager,
             IPaystackService paystackService,
             ApplicationDbContext context,
-            IOptions<PaystackSettings> payOptions)
+            IOptions<PaystackSettings> payOptions,
+            IEmailService emailService,
+            IConfiguration configuration)
         {
             _orderService = orderService;
             _logger = logger;
@@ -38,6 +42,8 @@ namespace StoreManagement.Controllers
             _paystackService = paystackService;
             _context = context;
             _payOptions = payOptions.Value;
+            _emailService = emailService;
+            _configuration = configuration;
         }
 
         // GET: Order
@@ -91,6 +97,109 @@ namespace StoreManagement.Controllers
                 _logger.LogError(ex, "Error retrieving order details for ID: {OrderId}", id);
                 TempData["Error"] = "An error occurred while loading order details.";
                 return RedirectToAction(nameof(Index));
+            }
+        }
+        // Receipt Action
+
+        public async Task<IActionResult> Receipt(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            try
+            {
+                // Fetch the order to check payment status
+                var order = await _context.Orders
+                    .FirstOrDefaultAsync(o => o.OrderId == id);
+
+                if (order == null)
+                {
+                    return NotFound();
+                }
+
+                // Only show receipt if order is paid
+                if (order.PaymentStatus != PaymentStatus.Paid)
+                {
+                    TempData["Error"] = "Receipt is only available for paid orders.";
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+
+                // Get receipt data from service
+                var model = await _orderService.GetReceiptAsync(id.Value);
+                if (model == null)
+                {
+                    return NotFound();
+                }
+
+
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving receipt for order ID: {OrderId}", id);
+                TempData["Error"] = "An error occurred while loading the receipt.";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendReceipt(int id)
+        {
+            try
+            {
+                var order = await _context.Orders
+                    .Include(o => o.Customer)
+                    .Include(o => o.OrderDetails)
+                        .ThenInclude(od => od.Product)
+                    .FirstOrDefaultAsync(o => o.OrderId == id);
+
+                if (order == null)
+                {
+                    TempData["Error"] = "Order not found.";
+                    return RedirectToAction(nameof(Receipt), new { id });
+                }
+
+                // Get receipt model
+                var model = await _orderService.GetReceiptAsync(id);
+                if (model == null)
+                {
+                    TempData["Error"] = "Could not generate receipt.";
+                    return RedirectToAction(nameof(Receipt), new { id });
+                }
+
+                // Determine which email to use (customer email OR default from settings)
+                var emailToUse = order.Customer?.Email ?? _configuration["Paystack:DefaultCustomerEmail"];
+
+                // Check if we have ANY email to send to
+                if (string.IsNullOrWhiteSpace(emailToUse))
+                {
+                    TempData["Error"] = "No email address configured. Please add a default email in settings.";
+                    return RedirectToAction(nameof(Receipt), new { id });
+                }
+
+                // Send the receipt email
+                var emailSent = await _emailService.SendReceiptEmailAsync(emailToUse, model);
+
+                if (emailSent)
+                {
+                    TempData["Success"] = "Receipt sent successfully!";
+                    _logger.LogInformation("Receipt email sent for order ID: {OrderId} to {Email}", id, emailToUse);
+                }
+                else
+                {
+                    TempData["Error"] = "Failed to send receipt email. Please try again.";
+                    _logger.LogWarning("Failed to send receipt email for order ID: {OrderId}", id);
+                }
+
+                return RedirectToAction(nameof(Receipt), new { id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending receipt for order ID: {OrderId}", id);
+                TempData["Error"] = "An error occurred while sending the receipt.";
+                return RedirectToAction(nameof(Receipt), new { id });
             }
         }
 
@@ -147,7 +256,7 @@ namespace StoreManagement.Controllers
                     }
                 }
 
-                // Validate that we have at least one item
+                // Validate we have at least one item
                 if (model.Items == null || !model.Items.Any())
                 {
                     ModelState.AddModelError("", "Please add at least one product to the order.");
@@ -160,10 +269,10 @@ namespace StoreManagement.Controllers
                     {
                         TempData["Success"] = "Order created successfully!";
                         
-                        // Get current staff ID FIRST (outside LINQ)
+                        // Get current staff ID
                         int thisStaffId = await GetCurrentUserStaffIdAsync();
 
-                        // Now use it in the query
+                     
                         var lastOrder = await _context.Orders
                             .Where(o => o.EmployeeId == thisStaffId)
                             .OrderByDescending(o => o.OrderId)

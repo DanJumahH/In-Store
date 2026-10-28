@@ -21,8 +21,11 @@ public partial class Customer
 
     public string? Country { get; set; }
 
-    public DateTime? Created { get; set; }
+    [EmailAddress(ErrorMessage = "Invalid email address")]
+    [MaxLength(256)]
+    public string? Email { get; set; }
 
+    public DateTime? Created { get; set; }
 
     public ICollection<Order> Orders { get; set; }
 }

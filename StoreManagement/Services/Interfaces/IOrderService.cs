@@ -20,9 +20,9 @@ namespace StoreManagement.Services.Interfaces
         Task<bool> UpdateOrderStatusAsync(int orderId, OrderStatus newStatus);
         Task<bool> OrderExistsAsync(int id);
         Task<int> GetNextOrderIdAsync();
-
-        // New: get products for a given category (used by AJAX)
         Task<List<SelectListItem>> GetProductsByCategoryAsync(int categoryId);
+
+        Task<ReceiptViewModel> GetReceiptAsync(int orderId);
 
         Task<DashboardViewModel> GetDashboardDataAsync(string userRole, string userName);
     }

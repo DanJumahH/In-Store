@@ -1,8 +1,9 @@
 ﻿using System.Net;
 using System.Net.Mail;
-using StoreManagement.Models.Entities;
+using System.Text.RegularExpressions;
 using StoreManagement.Models.ViewModels;
 using StoreManagement.Services.Interfaces;
+using StoreManagement.Settings;
 
 namespace StoreManagement.Services
 {
@@ -11,12 +12,18 @@ namespace StoreManagement.Services
         private readonly EmailSettings _emailSettings;
         private readonly ILogger<EmailService> _logger;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IConfiguration _configuration;
 
-        public EmailService(EmailSettings emailSettings, ILogger<EmailService> logger, IWebHostEnvironment webHostEnvironment)
+        public EmailService(
+            EmailSettings emailSettings, 
+            ILogger<EmailService> logger, 
+            IWebHostEnvironment webHostEnvironment,
+            IConfiguration configuration)
         {
             _emailSettings = emailSettings;
             _logger = logger;
             _webHostEnvironment = webHostEnvironment;
+            _configuration = configuration;
         }
 
         public async Task<bool> SendStaffCredentialsAsync(EmailViewModel model)
@@ -115,6 +122,103 @@ namespace StoreManagement.Services
             {
                 _logger.LogError(ex, "Error loading email template: {TemplateName}", templateName);
                 throw;
+            }
+        }
+
+        public async Task<bool> SendReceiptEmailAsync(string toEmail, ReceiptViewModel receipt)
+        {
+            try
+            {
+                // Fallback to default email if customer email is empty
+                var recipientEmail = string.IsNullOrWhiteSpace(toEmail) 
+                    ? _configuration["Paystack:DefaultCustomerEmail"]
+                    : toEmail;
+
+                if (string.IsNullOrWhiteSpace(recipientEmail))
+                {
+                    _logger.LogWarning("No email address available for receipt. Customer email: {Email}, Default email not configured", toEmail);
+                    return false;
+                }
+
+                // Load the HTML template
+                var templatePath = Path.Combine(
+                    _webHostEnvironment.ContentRootPath,
+                    "Services", "EmailTemplates", "ReceiptTemplate.html"
+                );
+
+                if (!File.Exists(templatePath))
+                {
+                    _logger.LogError("Receipt template not found: {TemplatePath}", templatePath);
+                    throw new FileNotFoundException($"Template not found: {templatePath}");
+                }
+
+                var htmlTemplate = await File.ReadAllTextAsync(templatePath);
+
+                // Replace placeholders with actual values
+                var html = htmlTemplate
+                    .Replace("{{StoreName}}", receipt.StoreName ?? "Store")
+                    .Replace("{{OrderId}}", receipt.OrderId.ToString())
+                    .Replace("{{OrderDate}}", receipt.OrderDateFormatted)
+                    .Replace("{{PaymentDate}}", receipt.PaymentDateFormatted)
+                    .Replace("{{PaymentReference}}", receipt.PaymentReference ?? "—")
+                    .Replace("{{CustomerName}}", receipt.CustomerName ?? "")
+                    .Replace("{{CustomerEmail}}", receipt.CustomerEmail ?? recipientEmail)
+                    .Replace("{{Subtotal}}", receipt.Subtotal.ToString("F2"))
+                    .Replace("{{Charges}}", receipt.Charges.ToString("F2"))
+                    .Replace("{{Total}}", receipt.Total.ToString("F2"))
+                    .Replace("{{GeneratedDate}}", DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
+
+                // Handle conditional charges section
+                if (receipt.Charges > 0)
+                {
+                    html = html
+                        .Replace("{{#ShowCharges}}", "")
+                        .Replace("{{/ShowCharges}}", "");
+                }
+                else
+                {
+                    // Remove the charges section if no charges
+                    html = Regex.Replace(html, @"{{#ShowCharges}}.*?{{/ShowCharges}}", "", RegexOptions.Singleline);
+                }
+
+                // Handle items loop
+                var itemsHtml = string.Empty;
+                if (receipt.Items != null && receipt.Items.Any())
+                {
+                    foreach (var item in receipt.Items)
+                    {
+                        itemsHtml += $@"
+                <tr>
+                    <td>{item.ProductName}</td>
+                    <td class=""text-end"">{item.Quantity}</td>
+                    <td class=""text-end"">₦{item.UnitPrice:F2}</td>
+                    <td class=""text-end"">₦{item.Total:F2}</td>
+                </tr>";
+                    }
+                }
+
+                // Replace items placeholder with actual items
+                html = Regex.Replace(
+                    html,
+                    @"{{#Items}}.*?{{/Items}}",
+                    itemsHtml,
+                    RegexOptions.Singleline
+                );
+
+                // Send the email
+                var emailSent = await SendEmailAsync(recipientEmail, $"Receipt - Order #{receipt.OrderId}", html);
+
+                if (emailSent)
+                {
+                    _logger.LogInformation("Receipt email sent to {Email} for order {OrderId}", recipientEmail, receipt.OrderId);
+                }
+
+                return emailSent;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending receipt email for order {OrderId}", receipt.OrderId);
+                return false;
             }
         }
     }

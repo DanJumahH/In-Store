@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using StoreManagement.Services;
 using StoreManagement.Services.Interfaces;
 using StoreManagement.Models.Entities;
+using StoreManagement.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +60,11 @@ builder.Services.AddScoped<IPaystackService, PaystackService>();
 
 // Typed HttpClient for Paystack
 builder.Services.AddHttpClient<IPaystackService, PaystackService>();
+
+// Store Settings
+var storesettings = new StoreSettings();
+builder.Configuration.GetSection("StoreSettings").Bind(storesettings);
+builder.Services.Configure<StoreSettings>(builder.Configuration.GetSection("StoreSettings"));
 
 var app = builder.Build();
 

@@ -11,6 +11,9 @@ namespace StoreManagement.Models.ViewModels
         [Required(ErrorMessage = "Customer is required")]
         [Display(Name = "Customer")]
         public int CustomerId { get; set; }
+        
+        [Display(Name = "Customer Email")]
+        public string? CustomerEmail { get; set; }
 
         [Display(Name = "Staff Member")]
         public int EmployeeId { get; set; }

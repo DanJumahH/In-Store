@@ -1,20 +1,68 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using StoreManagement.Data;
 using StoreManagement.Models.Entities;
 using StoreManagement.Models.Enums;
 using StoreManagement.Models.ViewModels;
 using StoreManagement.Services.Interfaces;
+using StoreManagement.Settings;
 
 namespace StoreManagement.Services
 {
     public class OrderService : IOrderService
     {
         private readonly ApplicationDbContext _context;
+        private readonly StoreSettings _storeSettings;
 
-        public OrderService(ApplicationDbContext context)
+        public OrderService(ApplicationDbContext context, IOptions<StoreSettings> storeOptions)
         {
             _context = context;
+            _storeSettings = storeOptions.Value;
+        }
+
+        public async Task<ReceiptViewModel?> GetReceiptAsync(int orderId)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.Staff)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Product)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+            if (order == null)
+            {
+                return null;
+            }
+
+            // Calculate totals
+            var subtotal = order.OrderDetails.Sum(od => od.Quantity * od.Product.Price);
+            var charges = 0m;
+            var total = subtotal + charges;
+
+            var model = new ReceiptViewModel
+            {
+                OrderId = order.OrderId,
+                StoreName = _storeSettings.StoreName,
+                CustomerName = order.Customer?.CustomerName,
+                CustomerEmail = order.Customer?.Email,
+                StaffName = $"{order.Staff?.FirstName} {order.Staff?.LastName}",
+                OrderDate = order.OrderDate,
+                PaymentDate = order.PaymentDate,
+                PaymentReference = order.PaymentReference,
+                PaymentMethod = order.PaymentMethod,
+                Items = order.OrderDetails.Select(od => new ReceiptItemViewModel
+                {
+                    ProductName = od.Product?.ProductName,
+                    Quantity = od.Quantity,
+                    UnitPrice = od.Product.Price
+                }).ToList(),
+                Subtotal = subtotal,
+                Charges = charges,
+                Total = total
+            };
+
+            return model;
         }
 
         public async Task<OrderFilterViewModel> GetFilteredOrdersAsync(OrderFilterViewModel filter)
@@ -155,6 +203,7 @@ namespace StoreManagement.Services
                     Status = o.Status,
                     StatusUpdatedAt = o.StatusUpdatedAt,
                     CustomerName = o.Customer != null ? o.Customer.CustomerName : "N/A",
+                    CustomerEmail = o.Customer != null ? o.Customer.Email : "N/A",
                     StaffName = o.Staff != null ? o.Staff.FirstName + " " + o.Staff.LastName : "N/A",
                     ShipperName = o.Shipper != null ? o.Shipper.ShipperName : "N/A",
                     OrderDetails = o.OrderDetails.Select(od => new OrderDetailViewModel
@@ -236,8 +285,7 @@ namespace StoreManagement.Services
                 })
                 .ToListAsync();
 
-            // Important: Do not load ALL products here (to avoid showing them at once).
-            // Products will be loaded via AJAX when a category is selected.
+            // Products loaded via AJAX when a category is selected.
             var productSelectList = new List<SelectListItem>();
 
             return new CreateOrderViewModel
@@ -252,7 +300,7 @@ namespace StoreManagement.Services
             };
         }
 
-        // New: return products for a single category
+        // Return products for a single category
         public async Task<List<SelectListItem>> GetProductsByCategoryAsync(int categoryId)
         {
             var products = await _context.Products
@@ -366,6 +414,8 @@ namespace StoreManagement.Services
                 return false;
             }
         }
+
+
 
         public async Task<EditOrderViewModel?> GetEditOrderViewModelAsync(int orderId)
         {

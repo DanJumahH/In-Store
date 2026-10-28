@@ -295,6 +295,10 @@ namespace StoreManagement.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(255)");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
                     b.Property<string>("PostalCode")
                         .HasMaxLength(20)
                         .IsUnicode(false)

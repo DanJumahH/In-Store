@@ -1,4 +1,4 @@
-﻿namespace StoreManagement.Models.Entities
+﻿namespace StoreManagement.Settings
 {
     public class EmailSettings
     {

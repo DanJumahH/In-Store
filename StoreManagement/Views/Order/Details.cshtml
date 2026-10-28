@@ -119,6 +119,23 @@
                             </div>
                         }
                     }
+
+                    @if (Model.PaymentStatus == PaymentStatus.Paid)
+                    {
+                        <div class="btn-group" role="group">
+                            <a asp-action="Receipt" asp-route-id="@Model.OrderId" class="btn btn-success">
+                                <i class="bi bi-receipt"></i> View Receipt
+                            </a>
+                            @if (!string.IsNullOrEmpty(Model.CustomerEmail))
+                            {
+                                <form asp-action="SendReceipt" asp-route-id="@Model.OrderId" method="post" style="display: inline;">
+                                    <button type="submit" class="btn btn-info">
+                                        <i class="bi bi-envelope"></i> Email Receipt
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    }
                 </div>
             </div>
         </div>
