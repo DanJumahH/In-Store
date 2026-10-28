@@ -33,6 +33,18 @@
                                     }
                                 </dd>
 
+                                <dt class="col-sm-4">Email:</dt>
+                                <dd class="col-sm-8">
+                                    @if (!string.IsNullOrEmpty(Model.CustomerEmail))
+                                    {
+                                        <a href="mailto:@Model.CustomerEmail">@Model.CustomerEmail</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Not provided</span>
+                                    }
+                                </dd>
+
                                 <dt class="col-sm-5">@Html.DisplayNameFor(model => model.Created)</dt>
                                 <dd class="col-sm-7">
                                     @if (Model.Created.HasValue)
