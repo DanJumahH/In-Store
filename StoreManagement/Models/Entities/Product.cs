@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -24,7 +25,11 @@ public partial class Product
     public string? Unit { get; set; }
 
     [Column(TypeName = "money")]
+    [Comment("Price in Nigerian Naira (NGN)")]
     public decimal Price { get; set; }
+
+    [MaxLength(3)]
+    public string Currency { get; set; } = "NGN";
 
     // stock management
     // current available stock for the product

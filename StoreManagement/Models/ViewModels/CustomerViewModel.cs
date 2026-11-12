@@ -11,6 +11,11 @@ namespace StoreManagement.Models.ViewModels
         [Display(Name = "Customer Name")]
         public string CustomerName { get; set; } = string.Empty;
 
+        [EmailAddress(ErrorMessage = "Invalid email address")]
+        [StringLength(255, ErrorMessage = "Customer email cannot exceed 255 characters")]
+        [Display(Name = "Email")]
+        public string CustomerEmail{ get; set; } = string.Empty;
+
         [StringLength(255, ErrorMessage = "Contact name cannot exceed 255 characters")]
         [Display(Name = "Contact Name")]
         public string? ContactName { get; set; }

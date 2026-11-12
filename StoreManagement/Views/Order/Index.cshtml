@@ -1,4 +1,5 @@
 ﻿@model StoreManagement.Models.ViewModels.OrderFilterViewModel
+@using StoreManagement.Models.Enums
 
 @{
     ViewData["Title"] = "Orders";
@@ -75,7 +76,7 @@
                         </select>
                     </div>
 
-                    <!-- Staff Filter -->
+                    <!-- Staff Filter (Admin Only) -->
                     @if (User.IsInRole("Admin"))
                     {
                         <div class="col-md-3">
@@ -150,6 +151,7 @@
                             <th>Customer</th>
                             <th>Staff</th>
                             <th>Status</th>
+                            <th>Payment</th>
                             <th>Items</th>
                             <th>Total Amount</th>
                             <th>Actions</th>
@@ -177,8 +179,17 @@
                                             </small>
                                         }
                                     </td>
+                                    <td>
+                                        <span class="@order.GetPaymentStatusBadgeClass()">
+                                            @order.PaymentStatus
+                                        </span>
+                                        <br />
+                                        <small class="@order.GetPaymentMethodBadge()">
+                                            @order.PaymentMethod
+                                        </small>
+                                    </td>
                                     <td>@order.ItemCount</td>
-                                    <td><strong>$@order.TotalAmount.ToString("N2")</strong></td>
+                                    <td><strong>₦@order.TotalAmount.ToString("N2")</strong></td>
                                     <td>
                                         <div class="btn-group" role="group">
                                             <a asp-action="Details" asp-route-id="@order.OrderId"
@@ -205,7 +216,7 @@
                         else
                         {
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
+                                <td colspan="9" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                     <p class="mt-2">
                                         @if (Model.HasActiveFilters())

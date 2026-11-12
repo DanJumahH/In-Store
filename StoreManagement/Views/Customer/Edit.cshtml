@@ -32,10 +32,17 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label asp-for="Address" class="form-label"></label>
-                            <input asp-for="Address" class="form-control" />
-                            <span asp-validation-for="Address" class="text-danger"></span>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="CustomerEmail" class="form-label"></label>
+                                <input asp-for="CustomerEmail" class="form-control" type="email" placeholder="Enter email address" />
+                                <span asp-validation-for="CustomerEmail" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Address" class="form-label"></label>
+                                <input asp-for="Address" class="form-control" placeholder="Enter street address" />
+                                <span asp-validation-for="Address" class="text-danger"></span>
+                            </div>
                         </div>
 
                         <div class="row">

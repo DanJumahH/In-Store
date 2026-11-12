@@ -242,6 +242,7 @@ namespace StoreManagement.Controllers
                 {
                     CustomerName = model.CustomerName,
                     ContactName = model.ContactName,
+                    Email = model.CustomerEmail,
                     Address = model.Address,
                     City = model.City,
                     Country = model.Country,

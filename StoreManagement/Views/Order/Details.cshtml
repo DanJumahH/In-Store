@@ -1,4 +1,5 @@
 ﻿@model StoreManagement.Models.ViewModels.OrderViewModel
+@using StoreManagement.Models.Enums
 
 @{
     ViewData["Title"] = $"Order #{Model.OrderId}";
@@ -59,7 +60,7 @@
                         <dd class="col-sm-8">@Model.TotalItems</dd>
 
                         <dt class="col-sm-4">Total Amount:</dt>
-                        <dd class="col-sm-8"><strong class="text-success">$@Model.TotalAmount.ToString("N2")</strong></dd>
+                        <dd class="col-sm-8"><strong class="text-success">₦@Model.TotalAmount.ToString("N2")</strong></dd>
                     </dl>
                 </div>
             </div>
@@ -90,31 +91,154 @@
                     @if (User.IsInRole("Admin") || User.IsInRole("SalesStaff"))
                     {
                         <hr />
-                        <form asp-action="UpdateStatus" method="post" class="mt-3">
-                            <input type="hidden" name="orderId" value="@Model.OrderId" />
-                            <div class="mb-3">
-                                <label for="status" class="form-label fw-bold">Update Status:</label>
-                                <select name="status" id="status" class="form-select" required>
-                                    @foreach (var statusOption in Model.StatusOptions)
-                                    {
-                                        <option value="@statusOption.Value" selected="@(statusOption.Value == ((int)Model.Status).ToString())">
-                                            @statusOption.Text
-                                        </option>
-                                    }
-                                </select>
+                        @if (Model.PaymentStatus == PaymentStatus.Paid)
+                        {
+                            <form asp-action="UpdateStatus" method="post" class="mt-3">
+                                <input type="hidden" name="orderId" value="@Model.OrderId" />
+                                <div class="mb-3">
+                                    <label for="status" class="form-label fw-bold">Update Status:</label>
+                                    <select name="status" id="status" class="form-select" required>
+                                        @foreach (var statusOption in Model.StatusOptions)
+                                        {
+                                            <option value="@statusOption.Value" selected="@(statusOption.Value == ((int)Model.Status).ToString())">
+                                                @statusOption.Text
+                                            </option>
+                                        }
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-arrow-repeat"></i> Update Status
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning mt-3">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <strong>Status update locked</strong> - Payment must be confirmed first (either Paystack or Manual).
                             </div>
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-arrow-repeat"></i> Update Status
-                            </button>
-                        </form>
+                        }
+                    }
+
+                    @if (Model.PaymentStatus == PaymentStatus.Paid)
+                    {
+                        <div class="btn-group" role="group">
+                            <a asp-action="Receipt" asp-route-id="@Model.OrderId" class="btn btn-success">
+                                <i class="bi bi-receipt"></i> View Receipt
+                            </a>
+                            @if (!string.IsNullOrEmpty(Model.CustomerEmail))
+                            {
+                                <form asp-action="SendReceipt" asp-route-id="@Model.OrderId" method="post" style="display: inline;">
+                                    <button type="submit" class="btn btn-info">
+                                        <i class="bi bi-envelope"></i> Email Receipt
+                                    </button>
+                                </form>
+                            }
+                        </div>
                     }
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Payment Information Card -->
+    <div class="card mb-3">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-credit-card"></i> Payment Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Payment Method</label>
+                    <p>
+                        @if (Model.PaymentMethod == PaymentMethod.Manual)
+                        {
+                            <span class="badge bg-primary">Manual</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Paystack</span>
+                        }
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Payment Status</label>
+                    <p>
+                        <span class="@Model.GetPaymentStatusBadgeClass()">
+                            @Model.PaymentStatus
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.PaymentReference))
+            {
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Payment Reference</label>
+                        <p><code>@Model.PaymentReference</code></p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Payment Date</label>
+                        <p>@Model.PaymentDate?.ToString("MMM dd, yyyy HH:mm:ss")</p>
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.PaymentNotes))
+            {
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Payment Notes</label>
+                        <p class="text-muted">@Model.PaymentNotes</p>
+                    </div>
+                </div>
+            }
+
+            <!-- Payment Action Buttons -->
+            @if (User.IsInRole("Admin") || User.IsInRole("SalesStaff"))
+            {
+                <div class="mt-4 pt-3 border-top">
+                    @if (Model.PaymentStatus != PaymentStatus.Paid)
+                    {
+                        <form asp-action="Pay" asp-route-id="@Model.OrderId" method="post" style="display:inline;">
+                            @if (Model.PaymentStatus == PaymentStatus.Pending)
+                            {
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-hourglass-split"></i> Continue Payment
+                                </button>
+                            }
+                            else if (Model.PaymentStatus == PaymentStatus.Failed)
+                            {
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-exclamation-triangle"></i> Retry Payment
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-credit-card"></i> Pay with Paystack
+                                </button>
+                            }
+                        </form>
+
+                        <button type="button" class="btn btn-secondary ms-2" data-bs-toggle="modal" data-bs-target="#manualPaymentModal">
+                            <i class="bi bi-cash-coin"></i> Mark as Paid (Manual)
+                        </button>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success fs-6">
+                            <i class="bi bi-check-circle"></i> Payment Completed
+                        </span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
     <!-- Order Items -->
-    <div class="card">
+    <div class="card mb-3">
         <div class="card-header bg-secondary text-white">
             <h5 class="mb-0"><i class="bi bi-basket"></i> Order Items</h5>
         </div>
@@ -134,16 +258,16 @@
                         {
                             <tr>
                                 <td>@item.ProductName</td>
-                                <td class="text-end">$@item.UnitPrice?.ToString("N2")</td>
+                                <td class="text-end">₦@item.UnitPrice?.ToString("N2")</td>
                                 <td class="text-center">@item.Quantity</td>
-                                <td class="text-end"><strong>$@item.LineTotal.ToString("N2")</strong></td>
+                                <td class="text-end"><strong>₦@item.LineTotal.ToString("N2")</strong></td>
                             </tr>
                         }
                     </tbody>
                     <tfoot class="table-info">
                         <tr>
                             <td colspan="3" class="text-end"><strong>Grand Total:</strong></td>
-                            <td class="text-end"><strong class="text-success fs-5">$@Model.TotalAmount.ToString("N2")</strong></td>
+                            <td class="text-end"><strong class="text-success fs-5">₦@Model.TotalAmount.ToString("N2")</strong></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -159,15 +283,40 @@
                 <i class="bi bi-arrow-left"></i> Back to List
             </a>
 
-            <a asp-action="Edit" asp-route-id="@Model.OrderId" class="btn btn-warning me-2">
-                <i class="bi bi-pencil-square"></i> Edit Order
-            </a>
-
-            <a asp-action="Delete" asp-route-id="@Model.OrderId" class="btn btn-danger">
-                <i class="bi bi-trash"></i> Delete Order
-            </a>
+            <div>
+                <a asp-action="Edit" asp-route-id="@Model.OrderId" class="btn btn-warning me-2">
+                    <i class="bi bi-pencil-square"></i> Edit Order
+                </a>
+                <a asp-action="Delete" asp-route-id="@Model.OrderId" class="btn btn-danger" onclick="return confirm('Are you sure?');">
+                    <i class="bi bi-trash"></i> Delete Order
+                </a>
+            </div>
         </div>
     }
+</div>
+
+<!-- Manual Payment Mode -->
+<div class="modal fade" id="manualPaymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mark as Paid (Manual)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="MarkAsPaidManual" asp-route-id="@Model.OrderId" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="paymentNotes" class="form-label">Payment Notes (Optional)</label>
+                        <textarea class="form-control" id="paymentNotes" name="paymentNotes" rows="3" placeholder="e.g., Received via bank transfer"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Confirm Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 @section Scripts {

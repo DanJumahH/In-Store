@@ -17,7 +17,7 @@ namespace StoreManagement.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.21")
+                .HasAnnotation("ProductVersion", "8.0.22")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -241,6 +241,7 @@ namespace StoreManagement.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CategoryId"));
 
                     b.Property<string>("CategoryName")
+                        .IsRequired()
                         .HasMaxLength(255)
                         .IsUnicode(false)
                         .HasColumnType("varchar(255)");
@@ -294,6 +295,10 @@ namespace StoreManagement.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(255)");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
                     b.Property<string>("PostalCode")
                         .HasMaxLength(20)
                         .IsUnicode(false)
@@ -311,20 +316,43 @@ namespace StoreManagement.Migrations
                         .HasColumnType("int")
                         .HasColumnName("OrderID");
 
-                    b.Property<int?>("CustomerId")
+                    b.Property<int>("CustomerId")
                         .HasColumnType("int")
                         .HasColumnName("CustomerID");
 
-                    b.Property<int?>("EmployeeId")
+                    b.Property<int>("EmployeeId")
                         .HasColumnType("int")
                         .HasColumnName("EmployeeID");
 
-                    b.Property<DateTime?>("OrderDate")
+                    b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime");
+
+                    b.Property<DateTime?>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PaymentMethod")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PaymentNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PaymentReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("PaymentStatus")
+                        .HasColumnType("int");
 
                     b.Property<int?>("ShipperId")
                         .HasColumnType("int")
                         .HasColumnName("ShipperID");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StatusUpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("OrderId")
                         .HasName("PK__Orders__C3905BAFC198D7B0");
@@ -347,7 +375,7 @@ namespace StoreManagement.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderDetailId"));
 
-                    b.Property<DateTime?>("CreatedAt")
+                    b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime")
                         .HasDefaultValueSql("(getdate())");
@@ -386,14 +414,41 @@ namespace StoreManagement.Migrations
                         .HasColumnType("int")
                         .HasColumnName("CategoryID");
 
-                    b.Property<decimal?>("Price")
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("NGN");
+
+                    b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
-                        .HasColumnType("money");
+                        .HasColumnType("money")
+                        .HasComment("Price in Nigerian Naira (NGN)");
 
                     b.Property<string>("ProductName")
+                        .IsRequired()
                         .HasMaxLength(255)
                         .IsUnicode(false)
                         .HasColumnType("varchar(255)");
+
+                    b.Property<int>("ReorderLevel")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("ReorderLevel");
+
+                    b.Property<int>("Stock")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasColumnName("Stock");
+
+                    b.Property<string>("StockUnit")
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("StockUnit");
 
                     b.Property<int?>("SupplierId")
                         .HasColumnType("int")
@@ -450,16 +505,19 @@ namespace StoreManagement.Migrations
                         .HasColumnType("date");
 
                     b.Property<string>("Email")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .IsUnicode(false)
                         .HasColumnType("varchar(100)");
 
                     b.Property<string>("FirstName")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .IsUnicode(false)
                         .HasColumnType("varchar(20)");
 
                     b.Property<string>("LastName")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .IsUnicode(false)
                         .HasColumnType("varchar(20)");
@@ -476,6 +534,38 @@ namespace StoreManagement.Migrations
                         .HasName("PK__Staffs__96D4AAF7CF7FF57C");
 
                     b.ToTable("Staffs");
+                });
+
+            modelBuilder.Entity("StoreManagement.Models.Entities.StockMovement", b =>
+                {
+                    b.Property<int>("StockMovementId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("StockMovementId"));
+
+                    b.Property<int>("Change")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("StockMovementId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("StockMovements");
                 });
 
             modelBuilder.Entity("StoreManagement.Models.Entities.Supplier", b =>
@@ -512,6 +602,7 @@ namespace StoreManagement.Migrations
                         .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("SupplierName")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -586,11 +677,15 @@ namespace StoreManagement.Migrations
                 {
                     b.HasOne("StoreManagement.Models.Entities.Customer", "Customer")
                         .WithMany("Orders")
-                        .HasForeignKey("CustomerId");
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("StoreManagement.Models.Entities.Staff", "Staff")
                         .WithMany("Orders")
-                        .HasForeignKey("EmployeeId");
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("StoreManagement.Models.Entities.Shipper", "Shipper")
                         .WithMany("Orders")
@@ -637,6 +732,17 @@ namespace StoreManagement.Migrations
                     b.Navigation("Supplier");
                 });
 
+            modelBuilder.Entity("StoreManagement.Models.Entities.StockMovement", b =>
+                {
+                    b.HasOne("StoreManagement.Models.Entities.Product", "Product")
+                        .WithMany("StockMovements")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("StoreManagement.Models.Entities.Category", b =>
                 {
                     b.Navigation("Products");
@@ -655,6 +761,8 @@ namespace StoreManagement.Migrations
             modelBuilder.Entity("StoreManagement.Models.Entities.Product", b =>
                 {
                     b.Navigation("OrderDetails");
+
+                    b.Navigation("StockMovements");
                 });
 
             modelBuilder.Entity("StoreManagement.Models.Entities.Shipper", b =>

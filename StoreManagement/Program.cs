@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using StoreManagement.Services;
 using StoreManagement.Services.Interfaces;
+using StoreManagement.Models.Entities;
+using StoreManagement.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,8 +43,28 @@ builder.Services.AddScoped<IStaffService, StaffService>();
 //builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
+// Email Service
+var emailSettings = new EmailSettings();
+builder.Configuration.GetSection("EmailSettings").Bind(emailSettings);
+builder.Services.AddSingleton(emailSettings);
+builder.Services.AddScoped<IEmailService, EmailService>();
+
 // SeedService
 builder.Services.AddHostedService<SeedService>();
+
+// Paystack Configuration
+var paystackSettings = new PaystackSettings();
+builder.Configuration.GetSection("Paystack").Bind(paystackSettings);
+builder.Services.Configure<PaystackSettings>(builder.Configuration.GetSection("Paystack"));
+builder.Services.AddScoped<IPaystackService, PaystackService>();
+
+// Typed HttpClient for Paystack
+builder.Services.AddHttpClient<IPaystackService, PaystackService>();
+
+// Store Settings
+var storesettings = new StoreSettings();
+builder.Configuration.GetSection("StoreSettings").Bind(storesettings);
+builder.Services.Configure<StoreSettings>(builder.Configuration.GetSection("StoreSettings"));
 
 var app = builder.Build();
 

@@ -26,6 +26,7 @@ namespace StoreManagement.Services
                     CustomerId = c.CustomerId,
                     CustomerName = c.CustomerName,
                     ContactName = c.ContactName,
+                    CustomerEmail = c.Email,
                     Address = c.Address,
                     City = c.City,
                     PostalCode = c.PostalCode,
@@ -47,6 +48,7 @@ namespace StoreManagement.Services
                     CustomerId = c.CustomerId,
                     CustomerName = c.CustomerName,
                     ContactName = c.ContactName,
+                    CustomerEmail = c.Email,
                     Address = c.Address,
                     City = c.City,
                     PostalCode = c.PostalCode,
@@ -67,6 +69,7 @@ namespace StoreManagement.Services
                 {
                     CustomerName = model.CustomerName,
                     ContactName = model.ContactName,
+                    Email = model.CustomerEmail,
                     Address = model.Address,
                     City = model.City,
                     PostalCode = model.PostalCode,
@@ -96,6 +99,7 @@ namespace StoreManagement.Services
 
                 customer.CustomerName = model.CustomerName;
                 customer.ContactName = model.ContactName;
+                customer.Email = model.CustomerEmail;
                 customer.Address = model.Address;
                 customer.City = model.City;
                 customer.PostalCode = model.PostalCode;

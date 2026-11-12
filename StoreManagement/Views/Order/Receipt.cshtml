@@ -1,0 +1,152 @@
+﻿@model StoreManagement.Models.ViewModels.ReceiptViewModel
+
+@{
+    ViewData["Title"] = $"Receipt - Order #{Model.OrderId}";
+}
+
+<style>
+    @@media print {
+        .navbar, .btn, .print-hide {
+            display: none !important;
+        }
+        body {
+            margin: 0;
+            padding: 10mm;
+        }
+        .receipt-container {
+            max-width: 58mm;
+        }
+    }
+</style>
+
+<div class="container mt-4 print-hide">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-receipt"></i> Receipt</h2>
+        </div>
+        <div class="col text-end">
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="bi bi-printer"></i> Print Receipt
+            </button>
+            <form asp-controller ="Order" asp-action="SendReceipt" asp-route-id="@Model.OrderId" method="post" style="display: inline;">
+                <button type="submit" class="btn btn-info">
+                    <i class="bi bi-envelope"></i> Send to Email
+                </button>
+            </form>
+            <a asp-action="Details" asp-route-id="@Model.OrderId" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Order
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+</div>
+
+<div class="receipt-container p-4 border">
+    <!-- Store Header -->
+    <div class="text-center mb-3">
+        <h5 class="mb-0">@Model.StoreName</h5>
+        <small>Receipt</small>
+    </div>
+
+    <hr class="my-2" />
+
+    <!-- Order & Payment Info -->
+    <div class="small mb-3">
+        <div class="row">
+            <div class="col-6">Order #:</div>
+            <div class="col-6 text-end"><strong>@Model.OrderId</strong></div>
+        </div>
+        <div class="row">
+            <div class="col-6">Order Date:</div>
+            <div class="col-6 text-end">@Model.OrderDateFormatted</div>
+        </div>
+        <div class="row">
+            <div class="col-6">Payment Date:</div>
+            <div class="col-6 text-end">@Model.PaymentDateFormatted</div>
+        </div>
+        <div class="row">
+            <div class="col-6">Ref #:</div>
+            <div class="col-6 text-end">@(Model.PaymentReference ?? "—")</div>
+        </div>
+    </div>
+
+    <hr class="my-2" />
+
+    <!-- Customer Info -->
+    <div class="small mb-3">
+        <strong>Customer:</strong>
+        <div>@Model.CustomerName</div>
+        @if (!string.IsNullOrEmpty(Model.CustomerEmail))
+        {
+            <div>@Model.CustomerEmail</div>
+        }
+    </div>
+
+    <hr class="my-2" />
+
+    <!-- Items Table -->
+    <table class="table table-sm table-borderless small">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th class="text-end">Qty</th>
+                <th class="text-end">Price</th>
+                <th class="text-end">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>@item.ProductName</td>
+                    <td class="text-end">@item.Quantity</td>
+                    <td class="text-end">₦@item.UnitPrice.ToString("F2")</td>
+                    <td class="text-end">₦@item.Total.ToString("F2")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <hr class="my-2" />
+
+    <!-- Totals -->
+    <div class="small">
+        <div class="row">
+            <div class="col-9">Subtotal:</div>
+            <div class="col-3 text-end">₦@Model.Subtotal.ToString("F2")</div>
+        </div>
+        @if (Model.Charges > 0)
+        {
+            <div class="row">
+                <div class="col-9">Charges:</div>
+                <div class="col-3 text-end">₦@Model.Charges.ToString("F2")</div>
+            </div>
+        }
+        <div class="row fw-bold">
+            <div class="col-9">Total:</div>
+            <div class="col-3 text-end">₦@Model.Total.ToString("F2")</div>
+        </div>
+    </div>
+
+    <hr class="my-2" />
+
+    <!-- Footer -->
+    <div class="text-center small text-muted">
+        <p class="mb-1">Thank you for your purchase!</p>
+        <p class="mb-0">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</p>
+    </div>
+</div>
